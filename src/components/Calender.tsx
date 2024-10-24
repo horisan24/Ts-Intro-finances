@@ -7,13 +7,19 @@ import { DatesSetArg, EventContentArg } from '@fullcalendar/core'
 import { calculateDailyBalances } from '../utils/financeCalculations'
 import { Balance, CalendarContent, Transaction } from '../types'
 import { formatCurrency } from '../utils/formatting'
+import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
+import { theme } from '../theme/theme'
+import { isSameMonth } from 'date-fns'
 
 interface CalenderProps {
   monthlyTransactions: Transaction[];
   setCurrentMonth: React.Dispatch<React.SetStateAction<Date>>;
+  currentDay: string;
+  setCurrentDay: React.Dispatch<React.SetStateAction<string>>;
+  today: string;
 }
 
-const Calender = ({monthlyTransactions, setCurrentMonth}: CalenderProps) => {
+const Calender = ({monthlyTransactions, setCurrentMonth, currentDay, setCurrentDay, today}: CalenderProps) => {
   // 1. 日付ごとの収支を計算する
   const dailyBalances = calculateDailyBalances(monthlyTransactions);
 
@@ -33,7 +39,18 @@ const Calender = ({monthlyTransactions, setCurrentMonth}: CalenderProps) => {
   const calendarEvents = createCalendarEvents(dailyBalances);
 
   const handleDatesSet = (datesetInfo: DatesSetArg) => {
-    setCurrentMonth(datesetInfo.view.currentStart);
+    const currentMonth = datesetInfo.view.currentStart;
+    setCurrentMonth(currentMonth);
+    const todayDate = new Date();
+    if (isSameMonth(todayDate, currentMonth)) {
+      setCurrentDay(today);
+    }
+  }
+
+  const backgroundEvent = {
+    start: currentDay,
+    display: "background",
+    backgroundColor: theme.palette.incomeColor.light,
   }
 
   const renderEventContent = (eventInfo: EventContentArg) => {
@@ -52,14 +69,19 @@ const Calender = ({monthlyTransactions, setCurrentMonth}: CalenderProps) => {
     )
   }
 
+  const handleDateClick = (dateInfo: DateClickArg) => {
+    setCurrentDay(dateInfo.dateStr);
+  }
+
   return (
     <FullCalendar
       locale={jaLocale}
-      plugins={[dayGridPlugin]}
+      plugins={[dayGridPlugin, interactionPlugin]}
       initialView="dayGridMonth"
-      events={calendarEvents}
+      events={[...calendarEvents, backgroundEvent]}
       eventContent={renderEventContent}
       datesSet={handleDatesSet}
+      dateClick={handleDateClick}
     />
   )
 }
