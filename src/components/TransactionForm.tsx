@@ -20,8 +20,8 @@ import TrainIcon from "@mui/icons-material/Train"; //交通費アイコン
 import WorkIcon from "@mui/icons-material/Work"; //給与アイコン
 import SavingsIcon from "@mui/icons-material/Savings"; //お小遣いアイコン
 import AddBusinessIcon from "@mui/icons-material/AddBusiness"; //副収入アイコン
-import { Controller, useForm } from "react-hook-form";
-import { ExpenseCategory, IncomeCategory } from "../types";
+import { Controller, SubmitHandler, useForm } from "react-hook-form";
+import { ExpenseCategory, IncomeCategory, Transaction } from "../types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { TransactionSchema, transactionSchema } from "../validations/schema";
 
@@ -29,6 +29,11 @@ interface TransactionFormProps {
   isEntryDrawerOpen: boolean;
   onCloseForm: () => void;
   currentDay: string;
+  onSaveTransaction: (transaction: TransactionSchema) => Promise<void>;
+  selectedTransaction: Transaction | null;
+  onDeleteTransaction: (transactionId: string) => Promise<void>;
+  setSelectedTransaction: React.Dispatch<React.SetStateAction<Transaction | null>>;
+  onUpdateTransaction: (transaction: TransactionSchema, transactionId: string) => Promise<void>;
 }
 
 type IncomeExpense = "expense" | "income";
@@ -38,7 +43,16 @@ interface CategoryItem {
   icon: JSX.Element;
 }
 
-const TransactionForm = ({isEntryDrawerOpen, onCloseForm, currentDay}: TransactionFormProps) => {
+const TransactionForm = ({
+  isEntryDrawerOpen,
+  onCloseForm,
+  currentDay,
+  onSaveTransaction,
+  selectedTransaction,
+  onDeleteTransaction,
+  setSelectedTransaction,
+  onUpdateTransaction
+}: TransactionFormProps) => {
   const formWidth = 320;
 
   const expenseCategories: CategoryItem[] = useMemo(() => [
@@ -65,6 +79,7 @@ const TransactionForm = ({isEntryDrawerOpen, onCloseForm, currentDay}: Transacti
     watch,
     formState: { errors },
     handleSubmit,
+    reset,
   } = useForm<TransactionSchema>({
     defaultValues: {
       type: "expense",
@@ -78,6 +93,7 @@ const TransactionForm = ({isEntryDrawerOpen, onCloseForm, currentDay}: Transacti
 
   const incomeExpenseToggle = (type: IncomeExpense) => () => {
     setValue("type", type);
+    setValue("category", "");
   };
 
   const currentType = watch("type");
@@ -90,9 +106,64 @@ const TransactionForm = ({isEntryDrawerOpen, onCloseForm, currentDay}: Transacti
     setCategories(currentType === "expense" ? expenseCategories : incomeCategories);
   }, [currentType, expenseCategories, incomeCategories]);
 
-  const onSubmit = (data: TransactionSchema) => {
-    console.log(data);
+  // 保存・更新ボタンを押したときの処理
+  const onSubmit: SubmitHandler<TransactionSchema> = (data) => {
+    if (selectedTransaction) {
+      onUpdateTransaction(data, selectedTransaction.id)
+        .then(() => {
+          setSelectedTransaction(null);
+        })
+        .catch((err) => {
+          console.error("更新に失敗しました:", err);
+        });
+    } else {
+      onSaveTransaction(data)
+        .then(() => {
+          reset({
+            type: "expense",
+            date: currentDay,
+            amount: 0,
+            category: "",
+            content: "",
+          });
+        })
+        .catch((err) => {
+          console.error("保存に失敗しました:", err);
+        });
+    }
   };
+
+  useEffect(() => {
+    // 選択肢が更新されたか確認
+    if (selectedTransaction) {
+      const isCategoryExist = categories.some((category) => category.label === selectedTransaction.category);
+      setValue("category", isCategoryExist ? selectedTransaction.category : "" as IncomeCategory | ExpenseCategory);
+    }
+  }, [selectedTransaction, categories, setValue]); 
+
+  useEffect(() => {
+    if (selectedTransaction) {
+      setValue("type", selectedTransaction.type);
+      setValue("date", selectedTransaction.date);
+      setValue("amount", selectedTransaction.amount);
+      setValue("content", selectedTransaction.content);
+    } else {
+      reset({
+        type: "expense",
+        date: currentDay,
+        amount: 0,
+        category: "",
+        content: "",
+      });
+    }
+  }, [selectedTransaction, setValue, reset, currentDay]);
+
+  const handleDelete = () => {
+    if (selectedTransaction) {
+      onDeleteTransaction(selectedTransaction.id);
+      setSelectedTransaction(null);
+    }
+  }
 
   return (
     <Box
@@ -228,15 +299,26 @@ const TransactionForm = ({isEntryDrawerOpen, onCloseForm, currentDay}: Transacti
               />
             )}
           />
-          {/* 保存ボタン */}
+          {/* 保存・更新ボタン */}
           <Button
             type="submit"
             variant="contained"
             color={currentType === "expense" ? "error" : "primary"}
             fullWidth
           >
-            保存
+            {selectedTransaction ? "更新" : "保存"}
           </Button>
+          {/* 削除ボタン */}
+          {selectedTransaction && (
+            <Button
+              onClick={handleDelete}
+              variant="outlined"
+              color={"secondary"}
+              fullWidth
+            >
+            削除
+            </Button>
+          )}
         </Stack>
       </Box>
     </Box>
