@@ -4,18 +4,23 @@ import MonthSelector from '../components/MonthSelector';
 import CategoryChart from '../components/CategoryChart';
 import BarChart from '../components/BarChart';
 import TransactionTable from '../components/TransactionTable';
+import { Transaction } from '../types';
 
 interface ReportProps {
   currentMonth: Date;
   setCurrentMonth: (date: Date) => void;
+  monthlyTransactions: Transaction[];
+  isLoading: boolean;
 }
 
-const Report = ({ currentMonth, setCurrentMonth }: ReportProps) => {
+const Report = ({ currentMonth, setCurrentMonth, monthlyTransactions, isLoading }: ReportProps) => {
   const isSmallScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'));
   const commonPaperStyle = {
-    height: { xs: "auto", md: "400px" },
+    height: "400px",
     display: "flex",
     flexDirection: "column",
+    margin: "8px",
+    padding: 2,
   }
 
   return (
@@ -37,7 +42,6 @@ const Report = ({ currentMonth, setCurrentMonth }: ReportProps) => {
         <Box
           flex={isSmallScreen ? undefined : 1}
           width={isSmallScreen ? '100%' : "33.33%"}
-          display="flex"
         >
           <Paper sx={commonPaperStyle}>
             <CategoryChart />
@@ -46,10 +50,9 @@ const Report = ({ currentMonth, setCurrentMonth }: ReportProps) => {
         <Box
           flex={isSmallScreen ? undefined : 2}
           width={isSmallScreen ? '100%' : "66.67%"}
-          display="flex"
         >
           <Paper sx={commonPaperStyle}>
-            <BarChart />
+            <BarChart monthlyTransactions={monthlyTransactions} isLoading={isLoading} />
           </Paper>
         </Box>
       </Box>
