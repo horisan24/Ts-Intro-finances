@@ -44,7 +44,7 @@ const Report = ({ currentMonth, setCurrentMonth, monthlyTransactions, isLoading 
           width={isSmallScreen ? '100%' : "33.33%"}
         >
           <Paper sx={commonPaperStyle}>
-            <CategoryChart />
+            <CategoryChart monthlyTransactions={monthlyTransactions} isLoading={isLoading} />
           </Paper>
         </Box>
         <Box
