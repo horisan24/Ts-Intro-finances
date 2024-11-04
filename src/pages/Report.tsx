@@ -11,9 +11,10 @@ interface ReportProps {
   setCurrentMonth: (date: Date) => void;
   monthlyTransactions: Transaction[];
   isLoading: boolean;
+  onDeleteTransaction: (ids: string | readonly string[]) => Promise<void>;
 }
 
-const Report = ({ currentMonth, setCurrentMonth, monthlyTransactions, isLoading }: ReportProps) => {
+const Report = ({ currentMonth, setCurrentMonth, monthlyTransactions, isLoading, onDeleteTransaction }: ReportProps) => {
   const isSmallScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'));
   const commonPaperStyle = {
     height: "400px",
@@ -60,7 +61,7 @@ const Report = ({ currentMonth, setCurrentMonth, monthlyTransactions, isLoading 
         display="flex"
         width="100%"
       >
-        <TransactionTable />
+        <TransactionTable monthlyTransactions={monthlyTransactions} onDeleteTransaction={onDeleteTransaction} />
       </Box>
     </Box>
   )
